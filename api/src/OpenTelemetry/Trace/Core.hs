@@ -139,6 +139,7 @@ module OpenTelemetry.Trace.Core (
   whenSpanIsRecording,
   ownCodeAttributes,
   callerAttributes,
+  codeAttributes,
   addAttributesToSpanArguments,
   unifyAttributesIfNonePresent,
 
