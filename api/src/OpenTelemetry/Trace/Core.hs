@@ -140,6 +140,7 @@ module OpenTelemetry.Trace.Core (
   ownCodeAttributes,
   callerAttributes,
   addAttributesToSpanArguments,
+  unifyAttributesIfNonePresent,
 
   -- * Limits
   SpanLimits (..),
@@ -321,10 +322,10 @@ ownCodeAttributes = case getCallStack callStack of
   -- and look one further step up for our own code.
   (("ownCodeAttributes", ownCodeCalledAt) : (ownFunction, _ownFunctionCalledAt) : _) ->
     -- The source location attributes for the call to 'ownCode' will do well enough to identify the function
-    fnAttributes ownFunction <> srcLocAttributes ownCodeCalledAt
+    codeAttributes ownFunction ownCodeCalledAt callStack
   (("ownCodeAttributes", ownCodeCalledAt) : _) ->
     -- We couldn't determine the calling function, but we should still be able to see the call location
-    fnAttributes "<unknown>" <> srcLocAttributes ownCodeCalledAt
+    codeAttributes "<unknown>" ownCodeCalledAt callStack
   -- The call stack doesn't look like we expect, potentially frozen or empty. In this case we can't
   -- really do much, so give up. (see discussion below in 'callerAttributes')
   _ -> mempty
@@ -341,10 +342,10 @@ callerAttributes = case getCallStack callStack of
   -- The call stack is (probably) not frozen and the top entry is our call. Assume we have a full call stack
   -- and look two further steps up for the caller.
   (("callerAttributes", _callerAttributesCalledAt) : (_ownFunction, ownFunctionCalledAt) : (callerFunction, _) : _) ->
-    fnAttributes callerFunction <> srcLocAttributes ownFunctionCalledAt
+    codeAttributes callerFunction ownFunctionCalledAt callStack
   (("callerAttributes", _callerAttributesCalledAt) : (_ownFunction, ownFunctionCalledAt) : _) ->
     -- We couldn't determine the calling function, but we should still be able to see the call location
-    fnAttributes "<unknown>" <> srcLocAttributes ownFunctionCalledAt
+    codeAttributes "<unknown>" ownFunctionCalledAt callStack
   -- The call stack doesn't look like we expect. It could be empty (in which case we can't do anything), or frozen
   --
   -- If it's frozen, there are at least two ways we could interpret it:
@@ -357,20 +358,20 @@ callerAttributes = case getCallStack callStack of
   _ -> mempty
 
 
-fnAttributes :: String -> AttributeMap
-fnAttributes fn =
+codeAttributes :: String -> SrcLoc -> CallStack -> AttributeMap
+codeAttributes fn loc cs =
   H.fromList
-    [ ("code.function", toAttribute $ T.pack fn)
-    ]
-
-
-srcLocAttributes :: SrcLoc -> AttributeMap
-srcLocAttributes loc =
-  H.fromList
-    [ ("code.namespace", toAttribute $ T.pack $ srcLocModule loc)
+    [ ("code.file.path", toAttribute $ T.pack $ srcLocFile loc)
+    , ("code.column.number", toAttribute $ srcLocStartCol loc)
+    , ("code.function.name", toAttribute $ T.pack $ srcLocPackage loc <> ":" <> srcLocModule loc <> " " <> fn)
+    , ("code.line.number", toAttribute $ srcLocStartLine loc)
+    , ("code.stacktrace", toAttribute $ T.pack $ prettyCallStack cs)
+    , -- Depricated attributes
+      ("code.namespace", toAttribute $ T.pack $ srcLocModule loc)
     , ("code.filepath", toAttribute $ T.pack $ srcLocFile loc)
     , ("code.lineno", toAttribute $ srcLocStartLine loc)
     , ("code.package", toAttribute $ T.pack $ srcLocPackage loc)
+    , ("code.function", toAttribute $ T.pack fn)
     ]
 
 
@@ -383,10 +384,14 @@ addAttributesToSpanArguments attrs args = args {attributes = H.union (attributes
 
 -- | Add the given attributes to the span arguments, but only if *none* of them are present already.
 addAttributesToSpanArgumentsIfNonePresent :: AttributeMap -> SpanArguments -> SpanArguments
-addAttributesToSpanArgumentsIfNonePresent attrs args | shouldAddAttrs = addAttributesToSpanArguments attrs args
+addAttributesToSpanArgumentsIfNonePresent attrs args = args {attributes = unifyAttributesIfNonePresent attrs $ attributes args}
+
+
+unifyAttributesIfNonePresent :: AttributeMap -> AttributeMap -> AttributeMap
+unifyAttributesIfNonePresent attrs1 attrs2 | shouldAddAttrs = H.union attrs1 attrs2
   where
-    shouldAddAttrs = H.null $ H.intersection attrs (attributes args)
-addAttributesToSpanArgumentsIfNonePresent _ args = args
+    shouldAddAttrs = H.null $ H.intersection attrs1 attrs2
+unifyAttributesIfNonePresent _attrs1 attrs2 = attrs2
 
 
 {- | The simplest function for annotating code with trace information.

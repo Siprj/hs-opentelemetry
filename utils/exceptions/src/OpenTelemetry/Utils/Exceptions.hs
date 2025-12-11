@@ -13,6 +13,7 @@ import qualified Data.Text as T
 import GHC.Exception (SrcLoc (..), getCallStack)
 import GHC.Stack (CallStack, callStack)
 import GHC.Stack.Types (HasCallStack)
+import OpenTelemetry.Attributes (getAttributeMap)
 import OpenTelemetry.Context (insertSpan, lookupSpan, removeSpan)
 import OpenTelemetry.Context.ThreadLocal (adjustContext)
 import qualified OpenTelemetry.Context.ThreadLocal as TraceCore.SpanContext
@@ -89,14 +90,8 @@ inSpanM'' t cs n args f = bracketError' before after (f . snd)
         case getCallStack cs of
           [] -> pure ()
           (fn, loc) : _ -> do
-            TraceCore.addAttributes
-              s
-              [ ("code.function", toAttribute $ T.pack fn)
-              , ("code.namespace", toAttribute $ T.pack $ srcLocModule loc)
-              , ("code.filepath", toAttribute $ T.pack $ srcLocFile loc)
-              , ("code.lineno", toAttribute $ srcLocStartLine loc)
-              , ("code.package", toAttribute $ T.pack $ srcLocPackage loc)
-              ]
+            attr <- TraceCore.spanGetAttributes s
+            TraceCore.addAttributes s . TraceCore.unifyAttributesIfNonePresent (getAttributeMap attr) $ TraceCore.codeAttributes fn loc cs
       pure (lookupSpan ctx, s)
 
     after e (parent, s) = do

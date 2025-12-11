@@ -32,3 +32,6 @@ allow-newer:
   , postgresql-simple:template-haskell
   , postgresql-libpq:Cabal
   , postgresql-libpq:base
+  , proto-lens:base
+  , proto-lens:ghc-prim
+  , proto-lens-runtime:base
