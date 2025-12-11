@@ -34,7 +34,7 @@ in rec {
     hs-opentelemetry-instrumentation-yesod = ../instrumentation/yesod;
     hs-opentelemetry-instrumentation-wai = ../instrumentation/wai;
     hs-opentelemetry-utils-exceptions = ../utils/exceptions;
-    hs-opentelemetry-vendor-honeycomb = ../vendors/honeycomb/;
+    hs-opentelemetry-vendor-honeycomb = ../vendors/honeycomb;
   };
 
   localPackageCabalDerivations = hfinal: let
