@@ -33,6 +33,8 @@ in rec {
     hs-opentelemetry-instrumentation-postgresql-simple = ../instrumentation/postgresql-simple;
     hs-opentelemetry-instrumentation-yesod = ../instrumentation/yesod;
     hs-opentelemetry-instrumentation-wai = ../instrumentation/wai;
+    hs-opentelemetry-utils-exceptions = ../utils/exceptions;
+    hs-opentelemetry-vendor-honeycomb = ../vendors/honeycomb/;
   };
 
   localPackageCabalDerivations = hfinal: let
