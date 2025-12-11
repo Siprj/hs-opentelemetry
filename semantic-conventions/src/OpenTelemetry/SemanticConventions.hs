@@ -1024,10 +1024,14 @@ module OpenTelemetry.SemanticConventions (
 
   -- * registry.code
   -- $registry_code
+  code_function_name,
   code_function,
   code_namespace,
+  code_file_path,
   code_filepath,
+  code_line_number,
   code_lineno,
+  code_column_number,
   code_column,
   code_stacktrace,
 
@@ -7300,36 +7304,77 @@ These attributes allow to report this unit of code and therefore to provide more
 
 
 {- |
-The method or function name, or equivalent (usually rightmost part of the code unit\'s name).
+The method or function fully-qualified name without arguments. The value should
+fit the natural representation of the language runtime, which is also likely
+the same used within code.stacktrace attribute value.
 -}
+code_function_name :: AttributeKey Text
+code_function_name = AttributeKey "code.function.name"
+
+
+{- |
+The method or function name, or equivalent (usually rightmost part of the code
+unit\'s name).
+-}
+{-# DEPRECATED code_function "Use code_function_name instead" #-}
 code_function :: AttributeKey Text
 code_function = AttributeKey "code.function"
 
 
 {- |
-The "namespace" within which @code.function@ is defined. Usually the qualified class or module name, such that @code.namespace@ + some separator + @code.function@ form a unique identifier for the code unit.
+The "namespace" within which @code.function@ is defined. Usually the qualified
+class or module name, such that @code.namespace@ + some separator
++ @code.function@ form a unique identifier for the code unit.
 -}
+{-# DEPRECATED code_namespace "The namespace is now included in code_function_name" #-}
 code_namespace :: AttributeKey Text
 code_namespace = AttributeKey "code.namespace"
 
 
 {- |
-The source code file name that identifies the code unit as uniquely as possible (preferably an absolute file path).
+The source code file name that identifies the code unit as uniquely as possible
+(preferably an absolute file path).
 -}
+code_file_path :: AttributeKey Text
+code_file_path = AttributeKey "code.file.path"
+
+
+{- |
+The source code file name that identifies the code unit as uniquely as possible
+(preferably an absolute file path).
+-}
+{-# DEPRECATED code_filepath "Use code_file_path instead" #-}
 code_filepath :: AttributeKey Text
 code_filepath = AttributeKey "code.filepath"
 
 
 {- |
+The line number in code_file_path best representing the operation. It SHOULD point within the code unit named in code_function_name
+-}
+code_line_number :: AttributeKey Int64
+code_line_number = AttributeKey "code.line.number"
+
+
+{- |
 The line number in @code.filepath@ best representing the operation. It SHOULD point within the code unit named in @code.function@.
 -}
+{-# DEPRECATED code_lineno "Use code_line_number instead" #-}
 code_lineno :: AttributeKey Int64
 code_lineno = AttributeKey "code.lineno"
 
 
 {- |
+The column number in code_file_path best representing the operation. It SHOULD
+point within the code unit named in code.function.name.
+-}
+code_column_number :: AttributeKey Int64
+code_column_number = AttributeKey "code.column.number"
+
+
+{- |
 The column number in @code.filepath@ best representing the operation. It SHOULD point within the code unit named in @code.function@.
 -}
+{-# DEPRECATED code_column "Use code_line_number instead" #-}
 code_column :: AttributeKey Int64
 code_column = AttributeKey "code.column"
 
